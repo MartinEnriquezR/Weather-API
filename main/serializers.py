@@ -8,7 +8,8 @@ class weatherSerializer(serializers.ModelSerializer):
         model = weatherModel
         fields = (
             'date_time', 
-            'temp_out',                
+            'temp_out',
+            'hi_temp',                
             'low_temp',                  
             'out_hum',                  
             'dew_pt',                    
@@ -73,7 +74,8 @@ class dayDataSerializer(serializers.Serializer):
             # append this dictionary to an empty list
             json.append({
                 'date_time':record.date_time, 
-                'temp_out':record.temp_out,                
+                'temp_out':record.temp_out,
+                'hi_temp':record.hi_temp,                
                 'low_temp':record.low_temp,                  
                 'out_hum':record.out_hum,                  
                 'dew_pt':record.dew_pt,                    
@@ -144,7 +146,8 @@ class threeDaysDataSerializer(serializers.Serializer):
             # append each dictionary to the list
                 json.append({
                     'date_time':record.date_time, 
-                    'temp_out':record.temp_out,                
+                    'temp_out':record.temp_out,
+                    'hi_temp':record.hi_temp,                
                     'low_temp':record.low_temp,                  
                     'out_hum':record.out_hum,                  
                     'dew_pt':record.dew_pt,                    
@@ -205,7 +208,8 @@ class monthDataSerializer(serializers.Serializer):
             # append each dictionary to the list
             json.append({
                 'date_time':record.date_time, 
-                'temp_out':record.temp_out,                
+                'temp_out':record.temp_out,
+                'hi_temp':record.hi_temp,                
                 'low_temp':record.low_temp,                  
                 'out_hum':record.out_hum,                  
                 'dew_pt':record.dew_pt,                    
@@ -241,33 +245,34 @@ class postSerializer(serializers.Serializer):
 
     #validate every field in the data
     date_time = serializers.DateTimeField()         
-    temp_out  = serializers.FloatField()                     
-    low_temp = serializers.FloatField()                      
-    out_hum  = serializers.IntegerField()                    
-    dew_pt = serializers.FloatField()                        
-    wind_speed = serializers.FloatField()                    
-    wind_dir = serializers.CharField()          
-    wind_run = serializers.FloatField()                      
-    hi_speed = serializers.FloatField()                      
-    hi_dir = serializers.CharField()            
-    wind_chill = serializers.FloatField()                    
-    heat_index = serializers.FloatField()                    
-    thw_index = serializers.FloatField()                     
-    bar = serializers.FloatField()                           
-    rain = serializers.FloatField()                          
-    rain_rate = serializers.FloatField()                     
-    heat_dd = serializers.FloatField()                       
-    cool_dd = serializers.FloatField()                       
-    in_temp = serializers.FloatField()                       
-    in_hum = serializers.IntegerField()                      
-    in_dew = serializers.FloatField()                        
-    in_heat = serializers.FloatField()                       
-    in_emc = serializers.FloatField()                       
-    in_air_density = serializers.FloatField()                
-    wind_samp = serializers.IntegerField()                   
-    wind_tx = serializers.IntegerField()                     
-    iss_recept = serializers.FloatField()                    
-    arc_int = serializers.IntegerField() 
+    temp_out  = serializers.FloatField(allow_null=True) 
+    hi_temp = serializers.FloatField(allow_null=True)                   
+    low_temp = serializers.FloatField(allow_null=True)                      
+    out_hum  = serializers.IntegerField(allow_null=True)                    
+    dew_pt = serializers.FloatField(allow_null=True)                        
+    wind_speed = serializers.FloatField(allow_null=True)                    
+    wind_dir = serializers.CharField(allow_blank=True)          
+    wind_run = serializers.FloatField(allow_null=True)                      
+    hi_speed = serializers.FloatField(allow_null=True)                      
+    hi_dir = serializers.CharField(allow_blank=True)            
+    wind_chill = serializers.FloatField(allow_null=True)                    
+    heat_index = serializers.FloatField(allow_null=True)                    
+    thw_index = serializers.FloatField(allow_null=True)                     
+    bar = serializers.FloatField(allow_null=True)                           
+    rain = serializers.FloatField(allow_null=True)                          
+    rain_rate = serializers.FloatField(allow_null=True)                     
+    heat_dd = serializers.FloatField(allow_null=True)                       
+    cool_dd = serializers.FloatField(allow_null=True)                       
+    in_temp = serializers.FloatField(allow_null=True)                       
+    in_hum = serializers.IntegerField(allow_null=True)                      
+    in_dew = serializers.FloatField(allow_null=True)                        
+    in_heat = serializers.FloatField(allow_null=True)                       
+    in_emc = serializers.FloatField(allow_null=True)                       
+    in_air_density = serializers.FloatField(allow_null=True)                
+    wind_samp = serializers.IntegerField(allow_null=True)                   
+    wind_tx = serializers.IntegerField(allow_null=True)                     
+    iss_recept = serializers.FloatField(allow_null=True)                    
+    arc_int = serializers.IntegerField(allow_null=True) 
 
     def validate(self, data):
         #make sure that the data does not already exist
@@ -280,7 +285,7 @@ class postSerializer(serializers.Serializer):
             date_time__second = data['date_time'].second
         )
         if record:
-            raise serializers.ValidationError('Data already exists')
+            raise serializers.ValidationError('Data for this date and time already exists')
 
         return data
     
@@ -289,6 +294,7 @@ class postSerializer(serializers.Serializer):
         record = weatherModel.objects.create(
             date_time = data['date_time'],
             temp_out = data['temp_out'],
+            hi_temp = data['hi_temp'],
             low_temp = data['low_temp'],
             out_hum = data['out_hum'],
             dew_pt = data['dew_pt'],
@@ -320,6 +326,7 @@ class postSerializer(serializers.Serializer):
         response = [{
             'date_time':record.date_time,
             'temp_out':record.temp_out,
+            'hi_temp':record.hi_temp,
             'low_temp':record.low_temp,
             'out_hum':record.out_hum,
             'dew_pt':record.dew_pt,

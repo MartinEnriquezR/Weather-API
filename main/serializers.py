@@ -338,7 +338,7 @@ class postSerializer(serializers.Serializer):
     temp_out  = serializers.FloatField(allow_null=True) 
     hi_temp = serializers.FloatField(allow_null=True)                   
     low_temp = serializers.FloatField(allow_null=True)                      
-    out_hum  = serializers.IntegerField(allow_null=True)                    
+    out_hum  = serializers.FloatField(allow_null=True)                    
     dew_pt = serializers.FloatField(allow_null=True)                        
     wind_speed = serializers.FloatField(allow_null=True)                    
     wind_dir = serializers.CharField(allow_blank=True)          
@@ -354,15 +354,15 @@ class postSerializer(serializers.Serializer):
     heat_dd = serializers.FloatField(allow_null=True)                       
     cool_dd = serializers.FloatField(allow_null=True)                       
     in_temp = serializers.FloatField(allow_null=True)                       
-    in_hum = serializers.IntegerField(allow_null=True)                      
+    in_hum = serializers.FloatField(allow_null=True)                      
     in_dew = serializers.FloatField(allow_null=True)                        
     in_heat = serializers.FloatField(allow_null=True)                       
     in_emc = serializers.FloatField(allow_null=True)                       
     in_air_density = serializers.FloatField(allow_null=True)                
-    wind_samp = serializers.IntegerField(allow_null=True)                   
-    wind_tx = serializers.IntegerField(allow_null=True)                     
+    wind_samp = serializers.FloatField(allow_null=True)                   
+    wind_tx = serializers.FloatField(allow_null=True)                     
     iss_recept = serializers.FloatField(allow_null=True)                    
-    arc_int = serializers.IntegerField(allow_null=True) 
+    arc_int = serializers.FloatField(allow_null=True) 
 
     def validate(self, data):
         #make sure that the data does not already exist

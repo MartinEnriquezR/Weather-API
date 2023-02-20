@@ -38,113 +38,45 @@ class weatherSerializer(serializers.ModelSerializer):
             'arc_int',
         ) 
 
-"""Serializer to return the data per day"""
-class dayDataSerializer(serializers.Serializer):
+"""Serializer to return the data per hour"""
+class hourDataSerializer(serializers.Serializer):
     
-    #parameters day,month and year
-    day = serializers.IntegerField()
-    month = serializers.IntegerField()
+    #parameters day,month,year,hour,minute and second
     year = serializers.IntegerField()
+    month = serializers.IntegerField()
+    day = serializers.IntegerField()
+    hour = serializers.IntegerField()
 
     def validate(self,data):
-        #make sure that data exists for the given day
+        #make sure that data exists for the given hour
         information = weatherModel.objects.filter(
-            date_time__day = data['day'],
+            date_time__year = data['year'],
             date_time__month = data['month'],
-            date_time__year = data['year']
+            date_time__day = data['day'],
+            date_time__hour = data['hour']
         )
-        
+
+        #if there is no data for the given hour, raise an error
         if not information:
-            raise serializers.ValidationError('No data available for this day')
+            raise serializers.ValidationError('No data available for this hour')
         
         return data
-
+    
     def create(self,data):
         #empty list
-        json = []
-        
+        json =[]
+
         #filter and organize by date
         records = weatherModel.objects.filter(
-            date_time__day = data['day'],
+            date_time__year = data['year'],
             date_time__month = data['month'],
-            date_time__year = data['year']
+            date_time__day = data['day'],
+            date_time__hour = data['hour']
         ).order_by('date_time')
 
+        #append the data to the list
         for record in records:
-            # append this dictionary to an empty list
             json.append({
-                'date_time':record.date_time, 
-                'temp_out':record.temp_out,
-                'hi_temp':record.hi_temp,                
-                'low_temp':record.low_temp,                  
-                'out_hum':record.out_hum,                  
-                'dew_pt':record.dew_pt,                    
-                'wind_speed':record.wind_speed,                
-                'wind_dir':record.wind_dir,
-                'wind_run':record.wind_run,                  
-                'hi_speed':record.hi_speed,                  
-                'hi_dir':record.hi_dir,
-                'wind_chill':record.wind_chill,                
-                'heat_index':record.heat_index,                
-                'thw_index':record.thw_index,                 
-                'bar':record.bar,                       
-                'rain':record.rain,                      
-                'rain_rate':record.rain_rate,                 
-                'heat_dd':record.heat_dd,                   
-                'cool_dd':record.cool_dd,                   
-                'in_temp':record.in_temp,                   
-                'in_hum':record.in_hum,                    
-                'in_dew':record.in_dew,                    
-                'in_heat':record.in_heat,                   
-                'in_emc':record.in_emc,                    
-                'in_air_density':record.in_air_density,            
-                'wind_samp':record.wind_samp,                 
-                'wind_tx':record.wind_tx,                   
-                'iss_recept':record.iss_recept,                
-                'arc_int':record.arc_int,
-            })
-
-        return json 
-
-"""Serializer to return data of three days"""
-class threeDaysDataSerializer(serializers.Serializer):
-    
-    #parameters day,month and year
-    day = serializers.IntegerField()
-    month = serializers.IntegerField()
-    year = serializers.IntegerField()
-
-    def validate(self, data):
-        
-        day = datetime(data['year'],data['month'],data['day'])  #first day
-        
-        #get the three days
-        for i in range(3):
-            info = weatherModel.objects.filter(
-                date_time__year =day.year,
-                date_time__month =day.month,
-                date_time__day= day.day
-                )
-            if not info:
-                raise serializers.ValidationError('No data available for this period of time')
-            day += timedelta(days=1)
-
-        return data
-
-    def create(self, data):
-        json = []   #place to store the data
-        day = datetime(data['year'],data['month'],data['day'])  #first day
-        #get the data of the three days
-        for i in range(3):
-            records = weatherModel.objects.filter(
-                date_time__year=day.year,
-                date_time__month=day.month,
-                date_time__day=day.day
-            ).order_by('date_time')
-            #add the records in the json
-            for record in records:
-            # append each dictionary to the list
-                json.append({
                     'date_time':record.date_time, 
                     'temp_out':record.temp_out,
                     'hi_temp':record.hi_temp,                
@@ -175,6 +107,160 @@ class threeDaysDataSerializer(serializers.Serializer):
                     'iss_recept':record.iss_recept,                
                     'arc_int':record.arc_int,
                 })
+        
+        #return the list
+        return json
+
+"""Serializer to return the data per day"""
+class dayDataSerializer(serializers.Serializer):
+    
+    #parameters day,month and year
+    day = serializers.IntegerField()
+    month = serializers.IntegerField()
+    year = serializers.IntegerField()
+    field = serializers.CharField()
+
+    def validate(self,data):
+        
+        #do not return data for the fields "date_time", "wind_dir" and "hi_dir"
+        if data['field'] == 'date_time' or data['field'] == 'wind_dir' or data['field'] == 'hi_dir':
+            raise serializers.ValidationError('Invalid field')
+
+        #make sure that the field exists
+        try:
+            weatherModel._meta.get_field(data['field'])
+        except: #handle the FieldDoesNotExist exception
+            raise serializers.ValidationError('Field does not exist')
+        
+
+        #make sure that data exists for the given day
+        information = weatherModel.objects.filter(
+            date_time__day = data['day'],
+            date_time__month = data['month'],
+            date_time__year = data['year']
+        )
+        
+        if not information:
+            raise serializers.ValidationError('No data available for this day')
+        
+        return data
+
+    def create(self,data):
+        #empty list
+        json = []
+        
+        #filter and organize by date
+        records = weatherModel.objects.filter(
+            date_time__day = data['day'],
+            date_time__month = data['month'],
+            date_time__year = data['year']
+        ).order_by('date_time')
+
+        #special case for the wind speed
+        if data['field'] == 'wind_speed':
+            for record in records:
+                json.append({
+                    'date_time':record.date_time, 
+                    'wind_speed':record.wind_speed,
+                    'wind_dir':record.wind_dir
+                })
+
+        #speacial case for hi speed
+        elif data['field'] == 'hi_speed':
+            for record in records:
+                json.append({
+                    'date_time':record.date_time, 
+                    'hi_speed':record.hi_speed,
+                    'hi_dir':record.hi_dir
+                })
+
+        else:
+            for record in records:
+                # append this dictionary to an empty list
+                json.append({
+                    'date_time':record.date_time, 
+                    data['field']:getattr(record,data['field']) #get the value of the field
+                })
+
+        return json 
+
+"""Serializer to return data of three days"""
+class threeDaysDataSerializer(serializers.Serializer):
+    
+    #parameters day,month, year and field
+    day = serializers.IntegerField()
+    month = serializers.IntegerField()
+    year = serializers.IntegerField()
+    field = serializers.CharField()
+
+    def validate(self, data):
+
+        #do not return data for the fields "date_time", "wind_dir" and "hi_dir"
+        if data['field'] == 'date_time' or data['field'] == 'wind_dir' or data['field'] == 'hi_dir':
+            raise serializers.ValidationError('Invalid field')
+
+        #make sure that the field exists
+        try:
+            weatherModel._meta.get_field(data['field'])
+        except: #handle the FieldDoesNotExist exception
+            raise serializers.ValidationError('Field does not exist')
+        
+        day = datetime(data['year'],data['month'],data['day'])  #first day
+        
+        #get the three days
+        for i in range(3):
+            info = weatherModel.objects.filter(
+                date_time__year =day.year,
+                date_time__month =day.month,
+                date_time__day= day.day
+                )
+            if not info:
+                raise serializers.ValidationError('No data available for this period of time')
+            day += timedelta(days=1)
+
+        return data
+
+    def create(self, data):
+        json = []   #place to store the data
+        day = datetime(data['year'],data['month'],data['day'])  #first day
+
+        #get the data of the three days
+        for i in range(3):
+            
+            #get the records
+            records = weatherModel.objects.filter(
+                date_time__year=day.year,
+                date_time__month=day.month,
+                date_time__day=day.day
+            ).order_by('date_time')
+
+            #add the records in the json
+            #special case for the wind speed
+            if data['field'] == 'wind_speed':
+                for record in records:
+                    json.append({
+                        'date_time':record.date_time, 
+                        'wind_speed':record.wind_speed,
+                        'wind_dir':record.wind_dir
+                    })
+
+            #special case for hi speed
+            elif data['field'] == 'hi_speed':
+                for record in records:
+                    json.append({
+                        'date_time':record.date_time, 
+                        'hi_speed':record.hi_speed,
+                        'hi_dir':record.hi_dir
+                    })
+
+            else:
+                for record in records:
+                    # append this dictionary to an empty list
+                    json.append({
+                        'date_time':record.date_time, 
+                        data['field']:getattr(record,data['field']) #get the value of the field
+                    })
+
             day += timedelta(days=1)    #increment the day
         return json
 
@@ -184,8 +270,20 @@ class monthDataSerializer(serializers.Serializer):
     #parameters
     month = serializers.IntegerField()
     year = serializers.IntegerField()
+    field = serializers.CharField()
 
     def validate(self, data):
+
+        #do not return data for the fields "date_time", "wind_dir" and "hi_dir"
+        if data['field'] == 'date_time' or data['field'] == 'wind_dir' or data['field'] == 'hi_dir':
+            raise serializers.ValidationError('Invalid field')
+
+        #make sure that the field exists
+        try:
+            weatherModel._meta.get_field(data['field'])
+        except: #handle the FieldDoesNotExist exception
+            raise serializers.ValidationError('Field does not exist')
+
         #make sure that data exists for the given month
         first_day = weatherModel.objects.filter(
             date_time__month = data['month'],
@@ -204,39 +302,31 @@ class monthDataSerializer(serializers.Serializer):
             date_time__year = data['year']
         ).order_by('date_time')
 
-        for record in records:
-            # append each dictionary to the list
-            json.append({
-                'date_time':record.date_time, 
-                'temp_out':record.temp_out,
-                'hi_temp':record.hi_temp,                
-                'low_temp':record.low_temp,                  
-                'out_hum':record.out_hum,                  
-                'dew_pt':record.dew_pt,                    
-                'wind_speed':record.wind_speed,                
-                'wind_dir':record.wind_dir,
-                'wind_run':record.wind_run,                  
-                'hi_speed':record.hi_speed,                  
-                'hi_dir':record.hi_dir,
-                'wind_chill':record.wind_chill,                
-                'heat_index':record.heat_index,                
-                'thw_index':record.thw_index,                 
-                'bar':record.bar,                       
-                'rain':record.rain,                      
-                'rain_rate':record.rain_rate,                 
-                'heat_dd':record.heat_dd,                   
-                'cool_dd':record.cool_dd,                   
-                'in_temp':record.in_temp,                   
-                'in_hum':record.in_hum,                    
-                'in_dew':record.in_dew,                    
-                'in_heat':record.in_heat,                   
-                'in_emc':record.in_emc,                    
-                'in_air_density':record.in_air_density,            
-                'wind_samp':record.wind_samp,                 
-                'wind_tx':record.wind_tx,                   
-                'iss_recept':record.iss_recept,                
-                'arc_int':record.arc_int,
-            })
+        #special case for the wind speed
+        if data['field'] == 'wind_speed':
+            for record in records:
+                json.append({
+                    'date_time':record.date_time, 
+                    'wind_speed':record.wind_speed,
+                    'wind_dir':record.wind_dir
+                })
+
+        #special case for hi speed
+        elif data['field'] == 'hi_speed':
+            for record in records:
+                json.append({
+                    'date_time':record.date_time, 
+                    'hi_speed':record.hi_speed,
+                    'hi_dir':record.hi_dir
+                })
+
+        else:
+            for record in records:
+                # append this dictionary to an empty list
+                json.append({
+                    'date_time':record.date_time, 
+                    data['field']:getattr(record,data['field']) #get the value of the field
+                })
 
         return json
 
